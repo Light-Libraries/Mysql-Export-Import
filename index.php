@@ -2,11 +2,11 @@
 
 class MysqlConnection
 {
-    private $servername = "localhost";
+    private $server_name = "localhost";
     private $username = "root";
     private $password = "";
     private $port = "3306";
-    private $dbName = "";
+    private $db_name = "";
     private $conn = null;
     private $sql_migration_query = "";
     private $tables = [];
@@ -14,9 +14,9 @@ class MysqlConnection
     private $columns_obj = [];
     private $insertion_column_names_cahced;
 
-    public function __construct($dbName)
+    public function __construct($db_name)
     {
-        $this->dbName = $dbName;
+        $this->db_name = $db_name;
         $this->createConnection();
     }
 
@@ -26,7 +26,7 @@ class MysqlConnection
             return;
         }
 
-        $this->conn = new mysqli($this->servername, $this->username, $this->password, $this->dbName, $this->port);
+        $this->conn = new mysqli($this->server_name, $this->username, $this->password, $this->db_name, $this->port);
         if ($this->conn->connect_error) {
             die("Connection failed:" . $this->conn->connect_error);
         }
@@ -62,9 +62,9 @@ class MysqlConnection
         return "";
     }
 
-    function getRowsInRange($tableName, $offset, $limit)
+    function getRowsInRange($table_name, $offset, $limit)
     {
-        $query = "SELECT * FROM $tableName LIMIT $limit OFFSET $offset";
+        $query = "SELECT * FROM $table_name LIMIT $limit OFFSET $offset";
         return $this->executeQueryFetch($query);
     }
 
@@ -83,7 +83,7 @@ class MysqlConnection
 
     function exportTables(array $tables = [])
     {
-        if (!$this->dbExist($this->dbName)) {
+        if (!$this->dbExist($this->db_name)) {
             die("Invalid Database Name");
         }
 
@@ -103,19 +103,19 @@ class MysqlConnection
     {
         $this->sql_migration_query = "";
         foreach ($this->tables as $table) {
-            $tblSchema = $this->createTableSchema($table);
-            $this->sql_migration_query .= "\n\n" . $tblSchema . "\n\n";
+            $tbl_schema = $this->createTableSchema($table);
+            $this->sql_migration_query .= "\n\n" . $tbl_schema . "\n\n";
 
-            $tblInsertQuery = $this->createInsertTableSchema($table);
+            $tbl_insert_schema = $this->createInsertTableSchema($table);
         }
     }
 
 
-    private function createTableSchema($tableName)
+    private function createTableSchema($table_name)
     {
-        $query = "CREATE TABLE IF NOT EXISTS '$tableName'(\n";
+        $query = "CREATE TABLE IF NOT EXISTS '$table_name'(\n";
         $this->insertion_column_names_cahced = "";
-        $rows = $this->getTableHeader($tableName);
+        $rows = $this->getTableHeader($table_name);
         $rows_count = count($rows);
 
         foreach ($rows as $key => $val) {
@@ -141,17 +141,19 @@ class MysqlConnection
         return $query;
     }
 
-    private function createInsertTableSchema($tableName, $offset = 0, $limit = 50)
+    private function createInsertTableSchema($table_name, $offset = 0, $limit = 50)
     {
-        $getDataInRange = $this->getRowsInRange($tableName, $offset, $limit);
-        $getDataInRange_count = count($getDataInRange);
-        if ($getDataInRange_count == 0) return "";
-        $query = "INSERT INTO " . $tableName . " (" .
+        $get_data_in_range = $this->getRowsInRange($table_name, $offset, $limit);
+        $get_data_in_range_count = count($get_data_in_range);
+        if ($get_data_in_range_count == 0) return "";
+        $query = "INSERT INTO " . $table_name . " (" .
             $this->insertion_column_names_cahced . ") VALUES (";
         $column_names_count = count($this->column_names);
-        foreach ($getDataInRange as $key => $val) {
+        foreach ($get_data_in_range as $key => $val) {
             // $query .=
-            foreach ($this->column_names as $columnKey => $columnVal) {
+            foreach ($this->column_names as $column_key => $column_val) {
+                $column_val = 'null';
+                if($val->$columnVal)
             }
         }
 
@@ -174,9 +176,9 @@ class MysqlConnection
         }
     }
 
-    function dbExist($dbName)
+    function dbExist($db_name)
     {
-        $db = $this->executeQueryFetch("SHOW DATABASES LIKE '$dbName'");
+        $db = $this->executeQueryFetch("SHOW DATABASES LIKE '$db_name'");
         return count($db) > 0 ? true : false;
     }
 
@@ -192,9 +194,9 @@ class MysqlConnection
         return $result_row;
     }
 
-    function getTableHeader($tableName)
+    function getTableHeader($table_name)
     {
-        $query = "DESCRIBE $tableName";
+        $query = "DESCRIBE $table_name";
         $result_row = $this->executeQueryFetch($query);
         return $result_row;
     }
@@ -216,9 +218,9 @@ $export = $mysqlConnection->exportTables([
     'providercategory'
 ]);
 
-// function backupDatabaseTables($dbName, array $tables = [])
+// function backupDatabaseTables($db_name, array $tables = [])
 // {
-//     $db = new mysqli("localhost", "root", "", $dbName);
+//     $db = new mysqli("localhost", "root", "", $db_name);
 
 //     if (count($tables) == 0) {
 //         $tables = array();
@@ -265,7 +267,7 @@ $export = $mysqlConnection->exportTables([
 //         $return .= "\n\n\n";
 //     }
 
-//     $handle = fopen($dbName . time() . '.sql', 'w+');
+//     $handle = fopen($db_name . time() . '.sql', 'w+');
 //     fwrite($handle, $return);
 //     fclose($handle);
 
