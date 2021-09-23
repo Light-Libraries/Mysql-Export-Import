@@ -1,5 +1,8 @@
 <?php
 
+set_time_limit(0);
+ini_set('memory_limit', '1024M');
+
 class MysqlConnection
 {
     private $server_name = "localhost";
@@ -94,23 +97,27 @@ class MysqlConnection
 
     function exportTables(array $tables = [])
     {
-        if (!$this->dbExist($this->db_name)) {
-            die("Invalid Database Name");
+        try {
+            if (!$this->dbExist($this->db_name)) {
+                die("Invalid Database Name");
+            }
+
+            if (count($tables) > 0) {
+                ['isError' => $isError, 'errMsg' => $errMsg] = $this->tablesExist($tables);
+                if ($isError) die($errMsg);
+            } else {
+                $tables = $this->fetchAllTables();
+            }
+
+            $this->tables = $tables;
+
+            $this->createMigrationSchema();
+            $this->createSqlFile();
+
+            return $this->sql_migration_query;
+        } catch (\Exception $e) {
+            throw new Exception($e->getMessage());
         }
-
-        if (count($tables) > 0) {
-            ['isError' => $isError, 'errMsg' => $errMsg] = $this->tablesExist($tables);
-            if ($isError) die($errMsg);
-        } else {
-            $tables = $this->fetchAllTables();
-        }
-
-        $this->tables = $tables;
-
-        $this->createMigrationSchema();
-        $this->createSqlFile();
-
-        return $this->sql_migration_query;
     }
 
     function createSqlFile()
