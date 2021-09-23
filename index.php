@@ -62,9 +62,16 @@ class MysqlConnection
         return "";
     }
 
-    function getRowsInRange($table_name, $offset, $limit)
+    function getRowsInRange($table_name,  $limit, $offset)
     {
-        $query = "SELECT * FROM $table_name LIMIT $limit OFFSET $offset";
+        $query = "SELECT * FROM $table_name";
+        // --  LIMIT $limit OFFSET $offset";
+        return $this->executeQueryFetch($query);
+    }
+
+    function getTableInfo($table_name)
+    {
+        $query = "SELECT * FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME='$table_name'";
         return $this->executeQueryFetch($query);
     }
 
@@ -97,6 +104,16 @@ class MysqlConnection
         $this->tables = $tables;
 
         $this->createMigrationSchema();
+        $this->createSqlFile();
+
+        return $this->sql_migration_query;
+    }
+
+    function createSqlFile()
+    {
+        $handle = fopen($this->db_name . time() . '.sql', 'w+');
+        fwrite($handle, $this->sql_migration_query);
+        fclose($handle);
     }
 
     function createMigrationSchema()
@@ -104,16 +121,16 @@ class MysqlConnection
         $this->sql_migration_query = "";
         foreach ($this->tables as $table) {
             $tbl_schema = $this->createTableSchema($table);
-            $this->sql_migration_query .= "\n\n" . $tbl_schema . "\n\n";
+            $this->sql_migration_query .= "\n\n" . $tbl_schema . "\n\n\n";
 
             $tbl_insert_schema = $this->createInsertTableSchema($table);
+            $this->sql_migration_query .= "\n\n" . $tbl_insert_schema . "\n\n\n";
         }
     }
 
-
     private function createTableSchema($table_name)
     {
-        $query = "CREATE TABLE IF NOT EXISTS '$table_name'(\n";
+        $query = "CREATE TABLE IF NOT EXISTS `$table_name`(\n";
         $this->insertion_column_names_cahced = "";
         $rows = $this->getTableHeader($table_name);
         $rows_count = count($rows);
@@ -130,34 +147,36 @@ class MysqlConnection
             array_push($this->columns_obj, $col);
             array_push($this->column_names, $col->Field);
 
-            $query .= " " . $col->Field . " " . $col->Type . " " . $this->getColumnExtraDesc($col->Field, $col->Extra) . "" .
-                (!$col->Null ? "NOT NULL" : "") . " " . $this->getColumnDefaultDesc($col->Field, $col->Default) . " " . $this->getColumnKeyDesc($col->Field, $col->Key)
-                . ($key < $rows_count - 1 ? "," : "") . "\n";
-            $this->insertion_column_names_cahced .= $col->Field . "" . ($key < $rows_count - 1 ? ", " : "");
+            $query .= " `" . $col->Field . "` " . $col->Type . " " . $this->getColumnExtraDesc($col->Field, $col->Extra) . "" . (!$col->Null ? "NOT NULL" : "") . " " . $this->getColumnDefaultDesc($col->Field, $col->Default) . " " . $this->getColumnKeyDesc($col->Field, $col->Key) . ($key < $rows_count - 1 ? "," : "") . "\n";
+            $this->insertion_column_names_cahced .= "`" . $col->Field . "`" . ($key < $rows_count - 1 ? "," : "");
         }
 
         $query .= ");";
-
         return $query;
     }
 
-    private function createInsertTableSchema($table_name, $offset = 0, $limit = 50)
+    private function createInsertTableSchema($table_name)
     {
-        $get_data_in_range = $this->getRowsInRange($table_name, $offset, $limit);
+        $table_info = $this->getTableInfo($table_name)[0];
+
+        $get_data_in_range = $this->getRowsInRange($table_name, 0, 50);
         $get_data_in_range_count = count($get_data_in_range);
         if ($get_data_in_range_count == 0) return "";
-        $query = "INSERT INTO " . $table_name . " (" .
-            $this->insertion_column_names_cahced . ") VALUES (";
-        $column_names_count = count($this->column_names);
-        foreach ($get_data_in_range as $key => $val) {
-            // $query .=
-            foreach ($this->column_names as $column_key => $column_val) {
-                $column_val = 'null';
-                if($val->$columnVal)
+        $query = "INSERT INTO `$table_name` (" .
+            $this->insertion_column_names_cahced . ") VALUES ";
+        for ($i = 0; $i < count($get_data_in_range); $i++) {
+            $query .= "\n(";
+            $curr = $get_data_in_range[$i];
+            for ($j = 0; $j < count($curr); $j++) {
+                $col_val = 'null';
+                if ($curr[$j] != null && $curr[$j] != "") {
+                    $col_val = "'" . $curr[$j] . "'";
+                }
+                $query .= $col_val . ($j == count($curr) - 1 ? "" : ",") . "";
             }
+            $query .= ")" . ($i == count($get_data_in_range) - 1 ? ";" : ", \n") . "";
         }
-
-        $query .= ";";
+        return $query;
     }
 
     /**
@@ -217,61 +236,3 @@ $export = $mysqlConnection->exportTables([
     'providers',
     'providercategory'
 ]);
-
-// function backupDatabaseTables($db_name, array $tables = [])
-// {
-//     $db = new mysqli("localhost", "root", "", $db_name);
-
-//     if (count($tables) == 0) {
-//         $tables = array();
-//         $result = $db->query("SHOW TABLES");
-//         while ($row = $result->fetch_row()) {
-//             $tables[] = $row[0];
-//         }
-//     }
-
-//     // var_dump($tables);
-
-//     $return = "";
-
-//     foreach ($tables as $table) {
-//         // select * table data
-//         $result = $db->query("SELECT * FROM $table");
-//         $numColumns = $result->field_count;
-
-//         // select create table query
-//         $result2 = $db->query("SHOW CREATE TABLE $table");
-//         $row2 = $result2->fetch_row();
-
-//         $return .= "\n\n" . $row2[1] . ";\n\n";
-
-
-//         for ($i = 0; $i < $numColumns; $i++) {
-//             while ($row = $result->fetch_row()) {
-//                 $return .= "INSERT INTO $table VALUES(";
-//                 for ($j = 0; $j < $numColumns; $j++) {
-//                     $row[$j] = addslashes($row[$j]);
-//                     $row[$j] = $row[$j];
-//                     if (isset($row[$j])) {
-//                         $return .= '"' . $row[$j] . '"';
-//                     } else {
-//                         $return .= '""';
-//                     }
-//                     if ($j < ($numColumns - 1)) {
-//                         $return .= ',';
-//                     }
-//                 }
-//                 $return .= "); \n";
-//             }
-//         }
-//         $return .= "\n\n\n";
-//     }
-
-//     $handle = fopen($db_name . time() . '.sql', 'w+');
-//     fwrite($handle, $return);
-//     fclose($handle);
-
-//     echo "Database Export Successfully";
-// }
-
-// backupDatabaseTables("healthtouch_main", ['providercategory']);
