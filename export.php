@@ -16,6 +16,10 @@ class MysqlConnection
 
     public function __construct($server_name, $username, $password, $port, $db_name)
     {
+        $this->server_name = $server_name;
+        $this->username = $username;
+        $this->password = $password;
+        $this->port = $port;
         $this->db_name = $db_name;
         $this->createConnection();
     }

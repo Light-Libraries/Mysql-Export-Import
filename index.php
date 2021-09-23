@@ -23,6 +23,6 @@ $mysqlConnection = new MysqlConnection(
     $configFile[$variables[1]],
     $configFile[$variables[2]],
     $configFile[$variables[3]],
-    $configFile[$variables[4]],
+    $configFile[$variables[4]]
 );
 $export = $mysqlConnection->exportTables($configFile[$variables[5]]);
