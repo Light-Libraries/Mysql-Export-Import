@@ -37,7 +37,7 @@ if ($configFile['operationType'] == "import") {
         $importConfig[$importConfigvariables[1]],
         $importConfig[$importConfigvariables[2]],
         $importConfig[$importConfigvariables[3]],
-        $importConfig[$importConfigvariables[4]],
+        $importConfig[$importConfigvariables[4]]
     );
 
     $import = $importConnection->importDatabase();
@@ -53,7 +53,7 @@ if ($configFile['operationType'] == "import") {
         $exportConfig[$exportConfigVariables[1]],
         $exportConfig[$exportConfigVariables[2]],
         $exportConfig[$exportConfigVariables[3]],
-        $exportConfig[$exportConfigVariables[4]],
+        $exportConfig[$exportConfigVariables[4]]
     );
 
     $export = $exportConnection->exportTables($exportConfig[$exportConfigVariables[5]]);
