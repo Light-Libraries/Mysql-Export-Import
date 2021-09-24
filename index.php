@@ -32,8 +32,6 @@ if ($configFile['operationType'] == "import") {
     // check import config 
     configCheck($importConfigvariables, $importConfig, "Import");
 
-    var_dump('proceed to import');
-
     $importConnection = new ImportConnection(
         $importConfig[$importConfigvariables[0]],
         $importConfig[$importConfigvariables[1]],
@@ -41,6 +39,8 @@ if ($configFile['operationType'] == "import") {
         $importConfig[$importConfigvariables[3]],
         $importConfig[$importConfigvariables[4]],
     );
+
+    $import = $importConnection->importDatabase();
 } else if ($configFile['operationType'] == "export") {
     $exportConfig = (array) $configFile[$startUpVariable[2]];
     $exportConfigVariables = ['serverName', 'username', 'password', 'port', 'databaseName', 'tables'];
