@@ -3,7 +3,7 @@
 set_time_limit(0);
 ini_set('memory_limit', '1024M');
 
-class MysqlConnection
+class ExportConnection
 {
     private $server_name = "localhost";
     private $username = "root";
@@ -47,7 +47,7 @@ class MysqlConnection
     private function getColumnDefaultDesc($field, $default)
     {
         if ($default != "") {
-            return "DEFAULT " . $default;
+            return "DEFAULT '" . $default . "'";
         }
         return "";
     }
@@ -120,6 +120,36 @@ class MysqlConnection
         }
     }
 
+    function createJsonFile($query)
+    {
+        if ($query == "" || $query == null) return;
+
+        $filename = 'queries.json';
+        $dir = './' . $filename;
+
+        $data = [
+            "query" => $query,
+            'execute' => false,
+            'success' => false
+        ];
+
+        if (!file_exists($dir)) {
+            $queries = [];
+            array_push($queries, $data);
+            $handle = fopen($filename, "w+");
+            fwrite($handle, json_encode($queries));
+            fclose($handle);
+        } else {
+            // get and push to qurery
+            $prevqueries = (array) json_decode(file_get_contents($dir));
+            array_push($prevqueries, $data);
+
+            $handle = fopen($filename, "w");
+            fwrite($handle, json_encode($prevqueries));
+            fclose($handle);
+        }
+    }
+
     function createSqlFile()
     {
         $handle = fopen($this->db_name . time() . '.sql', 'w+');
@@ -132,11 +162,14 @@ class MysqlConnection
         $this->sql_migration_query = "";
         foreach ($this->tables as $table) {
             $table = is_array($table) ? $table[0] : $table;
+
             $tbl_schema = $this->createTableSchema($table);
             $this->sql_migration_query .= "\n\n" . $tbl_schema . "\n\n\n";
+            $this->createJsonFile($tbl_schema);
 
             $tbl_insert_schema = $this->createInsertTableSchema($table);
             $this->sql_migration_query .= "\n\n" . $tbl_insert_schema . "\n\n\n";
+            $this->createJsonFile($tbl_insert_schema);
         }
     }
 

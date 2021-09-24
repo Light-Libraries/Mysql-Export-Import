@@ -1,10 +1,20 @@
 {
-    "serverName":"localhost",
-    "username":"root",
-    "password":"",
-    "port":"3306",
-    "databaseName":"users_tbl",
-    "tables":[
-        
-    ]
+    "operationType":"import",
+    "importConfig":{
+        "serverName":"localhost",
+        "username":"root",
+        "password":"",
+        "port":"3306",
+        "databaseName":"import_test"
+    },
+    "exportConfig":{
+        "serverName":"localhost",
+        "username":"root",
+        "password":"",
+        "port":"3306",
+        "databaseName":"healthtouch_main",
+        "tables":[
+    
+        ]
+    }
 }
