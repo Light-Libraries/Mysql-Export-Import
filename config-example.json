@@ -12,7 +12,7 @@
         "username":"root",
         "password":"",
         "port":"3306",
-        "databaseName":"healthtouch_main",
+        "databaseName":"export_test",
         "tables":[
     
         ]
