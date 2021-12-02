@@ -227,9 +227,9 @@ class ExportConnection
                 $query .= "(";
                 $curr = $get_data_in_range[$j];
                 for ($k = 0; $k < count($curr); $k++) {
-                    $col_val = "null";
+                    $col_val = 'NULL';
                     if ($curr[$k] != null && $curr[$k] != "") {
-                        $col_val = '"' . $curr[$k] . '"';
+                        $col_val = "'" . $curr[$k] . "'";
                     }
                     $query .= $col_val . ($k == count($curr) - 1 ? "" : ",") . "";
                 }
