@@ -71,8 +71,7 @@ class ExportConnection
 
     function getRowsInRange($table_name,  $limit, $offset)
     {
-        $query = "SELECT * FROM $table_name";
-        // --  LIMIT $limit OFFSET $offset";
+        $query = "SELECT * FROM $table_name LIMIT $limit OFFSET $offset";
         return $this->executeQueryFetch($query);
     }
 
@@ -203,23 +202,39 @@ class ExportConnection
     private function createInsertTableSchema($table_name)
     {
         $table_info = $this->getTableInfo($table_name)[0];
+        $table_rows = $table_info[7];
 
-        $get_data_in_range = $this->getRowsInRange($table_name, 0, 50);
-        $get_data_in_range_count = count($get_data_in_range);
-        if ($get_data_in_range_count == 0) return "";
+        if ($table_rows == 0) return "";
+        $default_limit = 500;
+        $default_offset = 0;
+        $run_count = ceil($table_rows / $default_limit);
+        $table_data = [];
+
         $query = "INSERT INTO `$table_name` (" .
             $this->insertion_column_names_cahced . ") VALUES ";
-        for ($i = 0; $i < count($get_data_in_range); $i++) {
-            $query .= "\n(";
-            $curr = $get_data_in_range[$i];
-            for ($j = 0; $j < count($curr); $j++) {
-                $col_val = 'null';
-                if ($curr[$j] != null && $curr[$j] != "") {
-                    $col_val = '"' . $curr[$j] . '"';
-                }
-                $query .= $col_val . ($j == count($curr) - 1 ? "" : ",") . "";
+        $track = 0;
+
+        for ($i = 0; $i <= $run_count; $i++) {
+            if ($i == 1) {
+                $default_offset = $default_limit;
+            } else if ($i > 1) {
+                $default_offset += $default_limit;
             }
-            $query .= ")" . ($i == count($get_data_in_range) - 1 ? ";" : ", \n") . "";
+
+            $get_data_in_range = $this->getRowsInRange($table_name, $default_limit, $default_offset);
+            for ($j = 0; $j < count($get_data_in_range); $j++) {
+                $track++;
+                $query .= "(";
+                $curr = $get_data_in_range[$j];
+                for ($k = 0; $k < count($curr); $k++) {
+                    $col_val = "null";
+                    if ($curr[$k] != null && $curr[$k] != "") {
+                        $col_val = '"' . $curr[$k] . '"';
+                    }
+                    $query .= $col_val . ($k == count($curr) - 1 ? "" : ",") . "";
+                }
+                $query .= ")" . ($track == $table_rows ? ";" : ", \n") . "";
+            }
         }
         return $query;
     }
